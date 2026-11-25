@@ -1,0 +1,27 @@
+{
+  "id": "./index.html",
+  "name": "NeuroSanta · NIHSS",
+  "short_name": "NeuroSanta",
+  "description": "Aplicativo offline de apoio à NIHSS, exame neurológico, trombólise e seleção de referência para trombectomia.",
+  "lang": "pt-BR",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#102b3f",
+  "background_color": "#f3f7f8",
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#102b3f">
+  <meta name="description" content="Protótipo offline de apoio à aplicação da escala NIHSS em português brasileiro.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <title>NeuroSanta · Avaliação Neurológica</title>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-wrap">
+      <div class="brand-mark" aria-hidden="true">NS</div>
+      <div>
+        <div class="brand-name">NeuroSanta</div>
+        <div class="brand-subtitle">NIHSS · Santa Casa de São Paulo</div>
+      </div>
+    </div>
+    <span class="status-pill"><span class="status-dot"></span> funciona offline</span>
+  </header>
+
+  <main class="shell">
+    <section class="intro">
+      <div class="eyebrow">FERRAMENTA DE APOIO CLÍNICO · PROTÓTIPO</div>
+      <h1>Escala NIHSS</h1>
+      <p class="intro-copy">Registre cada resposta durante o exame. A pontuação total é calculada ao final, quando todos os itens forem avaliáveis.</p>
+      <div class="notice" role="note">
+        <strong>Importante:</strong> este é um protótipo técnico, ainda não validado para uso assistencial. Não substitui treinamento, certificação nem o formulário oficial da versão adotada pelo serviço. Os itens 9 e 10 trazem links para o PDF brasileiro dos estímulos padronizados; o documento está em site externo e requer internet.
+      </div>
+    </section>
+
+    <nav class="tabs" aria-label="Navegação principal">
+      <button class="tab active" data-tab="assessment" type="button">NIHSS</button>
+      <button class="tab" data-tab="thrombolysis" type="button">Trombólise</button>
+      <button class="tab" data-tab="thrombectomy" type="button">Trombectomia</button>
+      <button class="tab" data-tab="neuroexam" type="button">Exame neurológico</button>
+      <button class="tab" data-tab="guide" type="button">Guia rápido</button>
+      <button class="tab" data-tab="about" type="button">Sobre</button>
+    </nav>
+
+    <section id="assessment" class="tab-panel active" aria-labelledby="assessment-title">
+      <div class="assessment-head">
+        <div>
+          <div class="eyebrow">AVALIAÇÃO ATUAL</div>
+          <h2 id="assessment-title">Escala NIHSS</h2>
+          <p class="muted small">Não são solicitados nem armazenados dados identificáveis do paciente.</p>
+        </div>
+        <button id="resetBtn" class="button button-quiet" type="button">Reiniciar</button>
+      </div>
+
+      <div class="progress-card">
+        <div class="progress-top"><span id="progressLabel">0 de 15 itens preenchidos</span><strong id="progressPercent">0%</strong></div>
+        <div class="progress-track"><div id="progressFill" class="progress-fill"></div></div>
+        <div class="progress-legend"><span><i class="legend-dot done"></i> preenchido</span><span><i class="legend-dot pending"></i> pendente</span><span><i class="legend-dot un"></i> não testável</span></div>
+      </div>
+
+      <div id="itemsRoot" class="items-grid" aria-live="polite"></div>
+
+      <section class="result-card" aria-live="polite">
+        <div class="result-label">RESULTADO</div>
+        <div id="resultState" class="result-state">Avaliação não iniciada</div>
+        <div id="resultNumber" class="result-number">— <span>/ 42</span></div>
+        <p id="resultHelp" class="result-help">Preencha os 15 campos para visualizar a pontuação total.</p>
+        <div id="resultBreakdown" class="result-breakdown" hidden></div>
+      </section>
+      <p class="footnote">A avaliação NIHSS deve ser aplicada na sequência padronizada. Registre o desempenho observado, sem presumir o que o paciente conseguiria fazer. Não retorne para modificar itens anteriores durante a aplicação, conforme a orientação do instrumento.</p>
+    </section>
+
+    <section id="thrombolysis" class="tab-panel" hidden>
+      <div class="section-heading">
+        <div class="eyebrow">APOIO À DECISÃO · NÃO SUBSTITUI PROTOCOLO</div>
+        <h2>Parâmetros e cálculo de trombolítico</h2>
+        <p class="muted">Informe peso, pressão arterial e glicemia. O app sinaliza alterações que exigem correção e reavaliação; não determina elegibilidade para trombólise.</p>
+      </div>
+
+      <div class="vitals-grid">
+        <label class="field-card"><span>Peso (kg)</span><input id="weightInput" type="number" min="1" max="300" step="0.1" inputmode="decimal" placeholder="Ex.: 70"><small>Necessário para cálculo de dose.</small></label>
+        <label class="field-card"><span>Pressão sistólica (mmHg)</span><input id="sbpInput" type="number" min="40" max="300" step="1" inputmode="numeric" placeholder="Ex.: 160"><small>Antes da trombólise.</small></label>
+        <label class="field-card"><span>Pressão diastólica (mmHg)</span><input id="dbpInput" type="number" min="20" max="200" step="1" inputmode="numeric" placeholder="Ex.: 95"><small>Antes da trombólise.</small></label>
+        <label class="field-card"><span>Glicemia (mg/dL)</span><input id="glucoseInput" type="number" min="1" max="1500" step="1" inputmode="numeric" placeholder="Ex.: 124"><small>Corrigir valores extremos e reavaliar.</small></label>
+      </div>
+
+      <div id="vitalsAlerts" class="alerts-stack" aria-live="polite">
+        <div class="alert-card alert-neutral">Preencha pressão arterial e glicemia para visualizar os alertas relacionados aos parâmetros fisiológicos.</div>
+      </div>
+
+      <div class="protocol-card">
+        <h3>Metas e referências rápidas</h3>
+        <div class="protocol-row"><span>Antes da trombólise IV</span><strong>PAS &lt; 185 e PAD &lt; 110 mmHg</strong></div>
+        <div class="protocol-row"><span>Após trombólise IV (primeiras 24 h)</span><strong>PA &lt; 180/105 mmHg</strong></div>
+        <div class="protocol-row"><span>Glicemia pós-IVT (PCDT brasileiro)</span><strong>&lt; 200 mg/dL</strong></div>
+        <div class="protocol-row"><span>Glicemia muito baixa</span><strong>&lt; 60 mg/dL: corrigir e reavaliar</strong></div>
+        <div class="protocol-row"><span>Hiperglicemia grave</span><strong>&gt; 400 mg/dL: corrigir e reavaliar</strong></div>
+        <p class="small-note">A glicemia de 80–130 mg/dL não deve ser perseguida com controle intensivo rotineiro para melhorar desfecho do AVC. Hipoglicemia ou hiperglicemia graves devem ser corrigidas e o déficit reavaliado; se persistir déficit incapacitante, a elegibilidade para IVT deve ser reconsiderada conforme diretriz e protocolo local.</p>
+      </div>
+
+      <div class="calculator-card">
+        <div class="eyebrow">CALCULADORA DE DOSE</div>
+        <h3>Esquema trombolítico</h3>
+        <p class="muted small">A calculadora é liberada apenas após preencher os parâmetros, manter PA abaixo dos limiares e confirmar manualmente que a equipe verificou os demais critérios de elegibilidade.</p>
+        <label class="select-field" for="drugSelect">Trombolítico
+          <select id="drugSelect">
+            <option value="alteplase">Alteplase</option>
+            <option value="tenecteplase">Tenecteplase</option>
+          </select>
+        </label>
+        <div id="tenecteplaseWarning" class="notice notice-amber" hidden><strong>Atenção: tenecteplase no AVC no Brasil.</strong> A diretriz AHA/ASA 2026 recomenda 0,25 mg/kg (máximo 25 mg) para pacientes elegíveis. Entretanto, o PCDT nacional de AVCi consultado descreve alteplase e a bula profissional brasileira de Metalyse consultada indica tratamento do IAM, não do AVC. O uso em AVC deve seguir protocolo institucional aprovado e avaliação de uso off-label; confirme apresentação e concentração antes do preparo.</div>
+        <label class="confirm-row"><input id="eligibilityConfirm" type="checkbox"><span>Confirmo que a equipe médica avaliou o diagnóstico, janela terapêutica, neuroimagem, contraindicações, exames pertinentes e protocolo institucional, e que a decisão de trombólise já foi tomada.</span></label>
+        <div id="calculatorStatus" class="alert-card alert-neutral">Preencha peso, PAS, PAD e glicemia e marque a confirmação da equipe para habilitar o cálculo.</div>
+        <div id="doseResult" class="dose-result" hidden aria-live="polite"></div>
+        <p class="small-note">O cálculo é matemático e serve apenas como dupla checagem. Não substitui prescrição, checagem independente, bula da apresentação disponível, conferência de bomba/seringa ou protocolo do hospital. Não use esta tela para decidir se o paciente é candidato.</p>
+      </div>
+
+      <div class="protocol-card">
+        <h3>Cuidados após trombólise</h3>
+        <p>Monitorização contínua e frequente de pressão arterial, oximetria e ECG por pelo menos 24 horas, além de acompanhamento neurológico e glicêmico conforme protocolo. Manter PA abaixo de 180/105 mmHg nas primeiras 24 horas. Evitar iniciar antitrombóticos nas primeiras 24 horas, até neuroimagem de controle, conforme protocolo institucional.</p>
+      </div>
+    </section>
+
+    <section id="thrombectomy" class="tab-panel" hidden>
+      <div class="section-heading">
+        <div class="eyebrow">APOIO À SELEÇÃO · NÃO É AUTORIZAÇÃO AUTOMÁTICA</div>
+        <h2>Trombectomia mecânica</h2>
+        <p class="muted">Registre os dados clínicos e de imagem. O resultado compara critérios de referência brasileiros e recomendações AHA/ASA 2026, sem substituir discussão com equipe neurovascular.</p>
+      </div>
+      <div class="notice notice-amber"><strong>Regra essencial:</strong> é necessária demonstração de oclusão arterial tratável por angio-TC/angio-RM. NIHSS, horário e ASPECTS isolados não confirmam indicação. Não atrase transferência/contato com centro habilitado enquanto completa os campos.</div>
+      <div class="protocol-card">
+        <h3>Dados clínicos e temporais</h3>
+        <div class="vitals-grid">
+          <label class="field-card"><span>Idade (anos)</span><input id="evtAge" type="number" min="18" max="120" step="1" placeholder="Ex.: 72"></label>
+          <label class="field-card"><span>NIHSS inicial</span><input id="evtNihss" type="number" min="0" max="42" step="1" placeholder="0–42"></label>
+          <label class="field-card"><span>mRS pré-AVC</span><select id="evtMrs"><option value="">Não informado</option><option value="0">0 — sem sintomas</option><option value="1">1 — sem incapacidade significativa</option><option value="2">2 — incapacidade leve</option><option value="3">3 — incapacidade moderada</option><option value="4">4 — incapacidade moderadamente grave</option><option value="5">5 — incapacidade grave</option><option value="6">6 — óbito</option></select></label>
+          <label class="field-card"><span>Última vez bem até o tratamento</span><select id="evtWindow"><option value="">Não informado</option><option value="0_6">Até 6 horas</option><option value="6_8">Mais de 6 até 8 horas</option><option value="8_16">Mais de 8 até 16 horas</option><option value="16_24">Mais de 16 até 24 horas</option><option value="gt24">Mais de 24 horas</option><option value="unknown">Desconhecido / wake-up</option></select></label>
+          <label class="field-card"><span>Vaso ocluído na angio-TC/RM</span><select id="evtVessel"><option value="">Não informado</option><option value="ica">ACI intracraniana</option><option value="m1">ACM — M1</option><option value="m2">ACM — M2</option><option value="basilar">Artéria basilar</option><option value="other">Outro vaso / distal</option><option value="none">Sem oclusão demonstrada</option></select></label>
+          <label class="field-card"><span>Se M2: dominância do ramo</span><select id="evtM2Dominance"><option value="">Não se aplica / não informado</option><option value="dominant">M2 dominante</option><option value="nondominant">M2 não dominante ou codominante</option><option value="unknown">Desconhecida</option></select></label>
+          <label class="field-card"><span>Hemorragia intracraniana</span><select id="evtHemorrhage"><option value="">Não informado</option><option value="no">Ausente</option><option value="yes">Presente</option></select></label>
+        </div>
+      </div>
+      <div class="protocol-card">
+        <h3>Neuroimagem</h3>
+        <div class="vitals-grid">
+          <label class="field-card"><span>ASPECTS (TC sem contraste)</span><input id="evtAspects" type="number" min="0" max="10" step="1" placeholder="0–10"></label>
+          <label class="field-card"><span>ASPECTS por DWI (RM), se aplicável</span><input id="evtDwiAspects" type="number" min="0" max="10" step="1" placeholder="0–10"></label>
+          <label class="field-card"><span>PC-ASPECTS (circulação posterior)</span><input id="evtPcAspects" type="number" min="0" max="10" step="1" placeholder="0–10"></label>
+          <label class="field-card"><span>Volume do core (mL)</span><input id="evtCore" type="number" min="0" max="300" step="0.1" placeholder="Ex.: 18"></label>
+          <label class="field-card"><span>Mismatch razão hipoperfusão/core</span><input id="evtMismatchRatio" type="number" min="0" max="20" step="0.1" placeholder="Ex.: 1,8"></label>
+          <label class="field-card"><span>Volume de mismatch/penumbra (mL)</span><input id="evtMismatchVolume" type="number" min="0" max="300" step="0.1" placeholder="Ex.: 25"></label>
+          <label class="field-card"><span>Efeito de massa significativo</span><select id="evtMassEffect"><option value="">Não informado</option><option value="no">Ausente</option><option value="yes">Presente</option></select></label>
+          <label class="field-card"><span>Imagem avançada/perfusão disponível</span><select id="evtAdvancedImaging"><option value="">Não informado</option><option value="yes">Sim</option><option value="no">Não</option></select></label>
+        </div>
+      </div>
+      <div class="actions-row"><button id="evtEvaluate" class="button button-primary" type="button">Avaliar critérios de referência</button><button id="evtClear" class="button button-quiet" type="button">Limpar campos</button></div>
+      <div id="evtResults" class="alerts-stack" aria-live="polite"><div class="alert-card alert-neutral">Preencha os dados e selecione “Avaliar critérios de referência”.</div></div>
+      <div class="protocol-card">
+        <h3>Resumo de critérios — PCDT brasileiro (2023)</h3>
+        <div class="protocol-row"><span>Janela inicial, até 8 h</span><strong>Adulto; oclusão ACI intracraniana ou ACM-M1; NIHSS ≥6; sem hemorragia; ASPECTS TC ≥6 ou DWI ≥5. O texto do PCDT/relatório registra literalmente mRS prévio “0 ou 2”; confirme a interpretação local.</strong></div>
+        <div class="protocol-row"><span>Janela tardia, 8–24 h</span><strong>AVCi anterior; NIHSS ≥6; mRS ≤2; seleção por volume de core e/ou mismatch segundo faixa etária, NIHSS e tempo.</strong></div>
+        <p class="small-note">Na seleção tardia do PCDT: core &lt;21 mL em ≥80 anos com NIHSS &gt;10; core &lt;31 mL em &lt;80 anos com NIHSS 10–19; core &lt;51 mL em &lt;80 anos com NIHSS &gt;20; ou perfil de mismatch (razão &gt;1,8; penumbra &gt;15 mL; core &lt;70 mL) na janela de 8–16 h. A redação publicada não contempla explicitamente NIHSS 20 nos intervalos de core acima; nesses casos, confira o texto integral e a interpretação do centro.</p>
+      </div>
+      <div class="protocol-card">
+        <h3>Recomendações selecionadas — AHA/ASA 2026</h3>
+        <div class="protocol-row"><span>Circulação anterior, até 6 h</span><strong>Oclusão proximal ACI/M1; NIHSS ≥6; mRS prévio 0–1; ASPECTS 3–10.</strong></div>
+        <div class="protocol-row"><span>Core grande selecionado, até 6 h</span><strong>Em pacientes selecionados &lt;80 anos, NIHSS ≥6, mRS 0–1, ASPECTS 0–2 e sem efeito de massa significativo, EVT pode ser razoável.</strong></div>
+        <div class="protocol-row"><span>Incapacidade prévia moderada, até 6 h</span><strong>Em pacientes selecionados com NIHSS ≥6, mRS 3–4 e ASPECTS ≥6, EVT pode ser razoável após decisão individualizada.</strong></div>
+        <div class="protocol-row"><span>Janela 6–24 h, ASPECTS ≥6</span><strong>Oclusão proximal ACI/M1; NIHSS ≥6; mRS prévio 0–1; ASPECTS ≥6.</strong></div>
+        <div class="protocol-row"><span>Janela 6–24 h, core grande selecionado</span><strong>Oclusão ACI/M1; idade &lt;80; NIHSS ≥6; mRS 0–1; ASPECTS 3–5; sem efeito de massa significativo.</strong></div>
+        <div class="protocol-row"><span>Oclusão basilar, até 24 h</span><strong>mRS prévio 0–1; NIHSS ≥10; PC-ASPECTS ≥6.</strong></div>
+        <p class="small-note">Essas recomendações internacionais não substituem os critérios administrativos/assistenciais do SUS nem garantem disponibilidade ou autorização local. A diretriz 2026 também ressalta que imagem de perfusão avançada não deve atrasar seleção na janela inicial quando TC sem contraste e angioimagem já permitem decisão.</p>
+      </div>
+    </section>
+
+    <section id="neuroexam" class="tab-panel" hidden>
+      <div class="section-heading">
+        <div class="eyebrow">EXAME NEUROLÓGICO E LOCALIZAÇÃO</div>
+        <h2>Exame físico neurológico</h2>
+        <p class="muted">Registre achados positivos e negativos relevantes. Os campos vazios significam “não avaliado”, não exame normal.</p>
+      </div>
+      <div class="notice notice-amber"><strong>Limite da interpretação:</strong> a hipótese de topografia/território é uma heurística baseada nos padrões selecionados. Não identifica a artéria culpada com certeza, não substitui angio-TC/angio-RM ou RM cerebral e pode falhar em lesões múltiplas, circulação posterior ou apresentações atípicas.</div>
+      <div class="protocol-card">
+        <h3>Estado mental e funções corticais</h3>
+        <div class="vitals-grid">
+          <label class="field-card"><span>Nível de consciência</span><select id="neuroConscious"><option value="">Não avaliado</option><option value="alert">Alerta</option><option value="somnolent">Sonolento</option><option value="stupor">Estuporoso</option><option value="coma">Coma</option></select></label>
+          <label class="field-card"><span>Orientação</span><select id="orientation"><option value="">Não avaliada</option><option value="oriented">Orientado em pessoa, lugar e tempo</option><option value="time">Desorientado no tempo</option><option value="place">Desorientado no espaço</option><option value="person">Desorientado em pessoa</option><option value="disoriented">Desorientação global</option></select></label>
+          <label class="field-card"><span>Atenção</span><select id="attention"><option value="">Não avaliada</option><option value="preserved">Preservada</option><option value="impaired">Hipoprosexia / desatenção</option><option value="fluctuating">Atenção flutuante</option><option value="delirium">Inatenção com síndrome confusional possível</option></select></label>
+          <label class="field-card"><span>Memória</span><select id="memory"><option value="">Não avaliada</option><option value="preserved">Sem alteração grosseira</option><option value="recent">Prejuízo de memória recente</option><option value="remote">Prejuízo de memória remota</option><option value="both">Prejuízo recente e remoto</option></select></label>
+          <label class="field-card"><span>Linguagem</span><select id="neuroLanguage"><option value="">Não avaliada</option><option value="normal">Sem alteração</option><option value="expressive">Afasia predominantemente expressiva</option><option value="receptive">Afasia predominantemente receptiva</option><option value="global">Afasia global</option><option value="dysarthria">Disartria</option><option value="mutism">Mutismo / anartria</option></select></label>
+          <label class="field-card"><span>Hemisfério dominante para linguagem (se conhecido)</span><select id="dominantSide"><option value="">Não conhecido / não determinado</option><option value="left">Esquerdo</option><option value="right">Direito</option></select><small>Não presuma dominância esquerda em todos os pacientes; considere lateralidade manual e história clínica.</small></label>
+          <label class="field-card"><span>Negligência / extinção</span><select id="neuroNeglect"><option value="">Não avaliada</option><option value="none">Ausente</option><option value="left">Negligência do hemiespaço esquerdo</option><option value="right">Negligência do hemiespaço direito</option><option value="bilateral">Desatenção bilateral / difusa</option></select></label>
+          <label class="field-card"><span>Outros sinais corticais</span><select id="neuroCortical"><option value="">Não avaliado</option><option value="none">Ausentes</option><option value="apraxia">Apraxia</option><option value="agnosia">Agnosia</option><option value="abulia">Abulia / alteração executiva</option><option value="seizure">Crise epiléptica / fenômeno ictal possível</option></select></label>
+        </div>
+      </div>
+      <div class="protocol-card">
+        <h3>Pares cranianos — I a XII</h3>
+        <div class="vitals-grid">
+          <label class="field-card"><span>I — Olfatório</span><select id="cn1"><option value="">Não avaliado</option><option value="normal">Normal</option><option value="hyposmia">Hiposmia / anosmia</option></select></label>
+          <label class="field-card"><span>II — Óptico</span><select id="cn2"><option value="">Não avaliado</option><option value="normal">Acuidade e campos preservados</option><option value="right_hh">Hemianopsia homônima direita</option><option value="left_hh">Hemianopsia homônima esquerda</option><option value="right_quad">Quadrantanopsia direita</option><option value="left_quad">Quadrantanopsia esquerda</option><option value="bitemporal">Defeito bitemporal</option><option value="other_visual">Outra perda visual / acuidade reduzida</option></select></label>
+          <label class="field-card"><span>Pupilas / reflexos fotomotores</span><select id="pupils"><option value="">Não avaliado</option><option value="normal">Isocóricas e fotorreagentes</option><option value="anis_r">Anisocoria com pupila direita maior</option><option value="anis_l">Anisocoria com pupila esquerda maior</option><option value="fixed_r">Pupila direita pouco reativa/fixa</option><option value="fixed_l">Pupila esquerda pouco reativa/fixa</option><option value="bilateral">Pupilas bilateralmente pouco reativas/fixas</option><option value="rapd">Defeito pupilar aferente relativo</option></select></label>
+          <label class="field-card"><span>III, IV e VI — Oculomotores</span><select id="cn346"><option value="">Não avaliado</option><option value="normal">Motilidade ocular preservada</option><option value="iii_r">Paresia do III nervo direito</option><option value="iii_l">Paresia do III nervo esquerdo</option><option value="vi_r">Paresia do VI nervo direito</option><option value="vi_l">Paresia do VI nervo esquerdo</option><option value="ino_r">Oftalmoplegia internuclear direita</option><option value="ino_l">Oftalmoplegia internuclear esquerda</option><option value="gaze_r">Desvio conjugado do olhar para a direita</option><option value="gaze_l">Desvio conjugado do olhar para a esquerda</option><option value="vertical">Paresia do olhar vertical</option></select></label>
+          <label class="field-card"><span>V — Trigêmeo</span><select id="cn5"><option value="">Não avaliado</option><option value="normal">Sensibilidade facial e mastigação preservadas</option><option value="sens_r">Hipoestesia facial direita</option><option value="sens_l">Hipoestesia facial esquerda</option><option value="motor_r">Fraqueza mastigatória direita</option><option value="motor_l">Fraqueza mastigatória esquerda</option><option value="bilat">Alteração bilateral</option></select></label>
+          <label class="field-card"><span>VII — Facial</span><select id="cn7"><option value="">Não avaliado</option><option value="normal">Simetria facial preservada</option><option value="central_r">Paresia facial central direita</option><option value="central_l">Paresia facial central esquerda</option><option value="peripheral_r">Paresia facial periférica direita</option><option value="peripheral_l">Paresia facial periférica esquerda</option><option value="bilat">Paresia facial bilateral</option></select></label>
+          <label class="field-card"><span>VIII — Vestibulococlear</span><select id="cn8"><option value="">Não avaliado</option><option value="normal">Audição e função vestibular sem alteração</option><option value="hearing_r">Hipoacusia direita</option><option value="hearing_l">Hipoacusia esquerda</option><option value="vestibular">Vertigem / nistagmo / síndrome vestibular</option></select></label>
+          <label class="field-card"><span>IX e X — Glossofaríngeo/vago</span><select id="cn910"><option value="">Não avaliado</option><option value="normal">Voz, palato e deglutição preservados</option><option value="right">Disfonia/disfagia ou paresia palatal à direita</option><option value="left">Disfonia/disfagia ou paresia palatal à esquerda</option><option value="bilat">Alteração bilateral</option></select></label>
+          <label class="field-card"><span>XI — Acessório</span><select id="cn11"><option value="">Não avaliado</option><option value="normal">Força de trapézio/ECM preservada</option><option value="right">Fraqueza à direita</option><option value="left">Fraqueza à esquerda</option><option value="bilat">Fraqueza bilateral</option></select></label>
+          <label class="field-card"><span>XII — Hipoglosso</span><select id="cn12"><option value="">Não avaliado</option><option value="normal">Língua na linha média, sem atrofia/fasciculações</option><option value="right">Desvio da língua para a direita / fraqueza à direita</option><option value="left">Desvio da língua para a esquerda / fraqueza à esquerda</option><option value="bilat">Atrofia/fasciculações ou fraqueza bilateral</option></select></label>
+        </div>
+      </div>
+      <div class="protocol-card">
+        <h3>Sistema motor: trofismo e movimentos</h3>
+        <div class="vitals-grid">
+          <label class="field-card"><span>Trofismo muscular</span><select id="muscleBulk"><option value="">Não avaliado</option><option value="normal">Preservado</option><option value="atrophy_r">Atrofia predominante à direita</option><option value="atrophy_l">Atrofia predominante à esquerda</option><option value="atrophy_b">Atrofia bilateral/difusa</option></select></label>
+          <label class="field-card"><span>Movimentos involuntários</span><select id="involuntary"><option value="">Não avaliados</option><option value="none">Ausentes</option><option value="tremor">Tremor</option><option value="chorea">Coreia / balismo</option><option value="myoclonus">Mioclonias</option><option value="dystonia">Distonia</option><option value="fasciculation">Fasciculações</option><option value="other">Outros movimentos</option></select></label>
+          <label class="field-card"><span>Manobra dos braços estendidos / pronator drift</span><select id="pronatorDrift"><option value="">Não avaliada</option><option value="none">Sem queda ou pronação</option><option value="right">Queda/pronação à direita</option><option value="left">Queda/pronação à esquerda</option><option value="bilateral">Bilateral</option><option value="not_testable">Não testável</option></select></label>
+        </div>
+      </div>
+      <div class="protocol-card">
+        <h3>Força, tônus e reflexos</h3>
+        <p class="small-note">Força global pela escala MRC (0–5) e força segmentar opcional. Registre cada movimento contra gravidade e resistência, considerando dor, limitação articular e esforço.</p>
+        <div class="vitals-grid">
+          <label class="field-card"><span>Força — braço direito (0–5)</span><select id="strRA"><option value="">Não avaliada</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+          <label class="field-card"><span>Força — braço esquerdo (0–5)</span><select id="strLA"><option value="">Não avaliada</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+          <label class="field-card"><span>Força — perna direita (0–5)</span><select id="strRL"><option value="">Não avaliada</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+          <label class="field-card"><span>Força — perna esquerda (0–5)</span><select id="strLL"><option value="">Não avaliada</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+        </div>
+        <h4 class="subsection-title">Força segmentar (MRC 0–5, opcional)</h4>
+        <div class="vitals-grid">
+          <label class="field-card"><span>Abdução do ombro — D</span><select id="segShoulderR"><option value="">Não avaliada</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+          <label class="field-card"><span>Abdução do ombro — E</span><select id="segShoulderL"><option value="">Não avaliada</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+          <label class="field-card"><span>Flexão do cotovelo — D</span><select id="segElbowFlexR"><option value="">Não avaliada</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+          <label class="field-card"><span>Flexão do cotovelo — E</span><select id="segElbowFlexL"><option value="">Não avaliada</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+          <label class="field-card"><span>Extensão do cotovelo — D</span><select id="segElbowExtR"><option value="">Não avaliada</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+          <label class="field-card"><span>Extensão do cotovelo — E</span><select id="segElbowExtL"><option value="">Não avaliada</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+          <label class="field-card"><span>Extensão do punho — D</span><select id="segWristR"><option value="">Não avaliada</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+          <label class="field-card"><span>Extensão do punho — E</span><select id="segWristL"><option value="">Não avaliada</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+          <label class="field-card"><span>Abdução dos dedos — D</span><select id="segFingerR"><option value="">Não avaliada</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+          <label class="field-card"><span>Abdução dos dedos — E</span><select id="segFingerL"><option value="">Não avaliada</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+          <label class="field-card"><span>Flexão do quadril — D</span><select id="segHipR"><option value="">Não avaliada</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+          <label class="field-card"><span>Flexão do quadril — E</span><select id="segHipL"><option value="">Não avaliada</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+          <label class="field-card"><span>Extensão do joelho — D</span><select id="segKneeR"><option value="">Não avaliada</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+          <label class="field-card"><span>Extensão do joelho — E</span><select id="segKneeL"><option value="">Não avaliada</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+          <label class="field-card"><span>Dorsiflexão do tornozelo — D</span><select id="segAnkleR"><option value="">Não avaliada</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+          <label class="field-card"><span>Dorsiflexão do tornozelo — E</span><select id="segAnkleL"><option value="">Não avaliada</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+        </div>
+        <h4 class="subsection-title">Tônus e respostas reflexas</h4>
+        <div class="vitals-grid">
+          <label class="field-card"><span>Tônus — lado direito</span><select id="toneR"><option value="">Não avaliado</option><option value="normal">Normal</option><option value="spastic">Aumentado / espástico</option><option value="flaccid">Reduzido / flácido</option><option value="rigid">Rigidez</option></select></label>
+          <label class="field-card"><span>Tônus — lado esquerdo</span><select id="toneL"><option value="">Não avaliado</option><option value="normal">Normal</option><option value="spastic">Aumentado / espástico</option><option value="flaccid">Reduzido / flácido</option><option value="rigid">Rigidez</option></select></label>
+          <label class="field-card"><span>Bicipital — D</span><select id="refBicepsR"><option value="">Não avaliado</option><option value="0">0</option><option value="1">1+</option><option value="2">2+</option><option value="3">3+</option><option value="4">4+ / clônus</option></select></label>
+          <label class="field-card"><span>Bicipital — E</span><select id="refBicepsL"><option value="">Não avaliado</option><option value="0">0</option><option value="1">1+</option><option value="2">2+</option><option value="3">3+</option><option value="4">4+ / clônus</option></select></label>
+          <label class="field-card"><span>Tricipital — D</span><select id="refTricepsR"><option value="">Não avaliado</option><option value="0">0</option><option value="1">1+</option><option value="2">2+</option><option value="3">3+</option><option value="4">4+ / clônus</option></select></label>
+          <label class="field-card"><span>Tricipital — E</span><select id="refTricepsL"><option value="">Não avaliado</option><option value="0">0</option><option value="1">1+</option><option value="2">2+</option><option value="3">3+</option><option value="4">4+ / clônus</option></select></label>
+          <label class="field-card"><span>Estilorradial — D</span><select id="refBrachioR"><option value="">Não avaliado</option><option value="0">0</option><option value="1">1+</option><option value="2">2+</option><option value="3">3+</option><option value="4">4+ / clônus</option></select></label>
+          <label class="field-card"><span>Estilorradial — E</span><select id="refBrachioL"><option value="">Não avaliado</option><option value="0">0</option><option value="1">1+</option><option value="2">2+</option><option value="3">3+</option><option value="4">4+ / clônus</option></select></label>
+          <label class="field-card"><span>Patelar — D</span><select id="refPatellarR"><option value="">Não avaliado</option><option value="0">0</option><option value="1">1+</option><option value="2">2+</option><option value="3">3+</option><option value="4">4+ / clônus</option></select></label>
+          <label class="field-card"><span>Patelar — E</span><select id="refPatellarL"><option value="">Não avaliado</option><option value="0">0</option><option value="1">1+</option><option value="2">2+</option><option value="3">3+</option><option value="4">4+ / clônus</option></select></label>
+          <label class="field-card"><span>Aquileu — D</span><select id="refAchillesR"><option value="">Não avaliado</option><option value="0">0</option><option value="1">1+</option><option value="2">2+</option><option value="3">3+</option><option value="4">4+ / clônus</option></select></label>
+          <label class="field-card"><span>Aquileu — E</span><select id="refAchillesL"><option value="">Não avaliado</option><option value="0">0</option><option value="1">1+</option><option value="2">2+</option><option value="3">3+</option><option value="4">4+ / clônus</option></select></label>
+          <label class="field-card"><span>Resposta plantar direita</span><select id="plantarR"><option value="">Não avaliada</option><option value="flexor">Flexora</option><option value="extensor">Extensora (Babinski)</option><option value="indeterminate">Indiferente / indeterminada</option></select></label>
+          <label class="field-card"><span>Resposta plantar esquerda</span><select id="plantarL"><option value="">Não avaliada</option><option value="flexor">Flexora</option><option value="extensor">Extensora (Babinski)</option><option value="indeterminate">Indiferente / indeterminada</option></select></label>
+        </div>
+      </div>
+      <div class="protocol-card">
+        <h3>Sensibilidade, coordenação e marcha</h3>
+        <div class="vitals-grid">
+          <label class="field-card"><span>Sensibilidade</span><select id="sensory"><option value="">Não avaliada</option><option value="normal">Sem déficit</option><option value="right">Hipoestesia/hemianestesia direita</option><option value="left">Hipoestesia/hemianestesia esquerda</option><option value="crossed">Padrão cruzado face-corpo</option><option value="bilateral">Déficit bilateral</option><option value="level">Nível sensitivo</option><option value="cortical">Extinção / déficit sensitivo cortical</option></select></label>
+          <label class="field-card"><span>Modalidades / distribuição sensitiva (detalhar)</span><input id="sensoryModalities" type="text" maxlength="300" placeholder="Ex.: dor, tato, vibração, propriocepção; face, tronco e membros"></label>
+          <label class="field-card"><span>Coordenação</span><select id="coordination"><option value="">Não avaliada</option><option value="normal">Sem dismetria</option><option value="right">Dismetria/ataxia apendicular direita</option><option value="left">Dismetria/ataxia apendicular esquerda</option><option value="bilateral">Dismetria bilateral</option><option value="truncal">Ataxia axial/troncular</option></select></label>
+          <label class="field-card"><span>Marcha (somente se seguro)</span><select id="gait"><option value="">Não avaliada</option><option value="normal">Normal</option><option value="hemiparetic_r">Hemiparética direita</option><option value="hemiparetic_l">Hemiparética esquerda</option><option value="ataxic">Atáxica</option><option value="unable">Não deambula / não testada por segurança</option></select></label>
+          <label class="field-card"><span>Sinais meníngeos</span><select id="meningeal"><option value="">Não avaliados</option><option value="absent">Ausentes</option><option value="present">Rigidez de nuca / sinais meníngeos presentes</option><option value="limited">Exame limitado / não confiável</option></select></label>
+          <label class="field-card"><span>Achados adicionais / observações</span><input id="neuroNotes" type="text" maxlength="400" placeholder="Ex.: dismetria, nistagmo, síndrome cruzada..."></label>
+        </div>
+      </div>
+      <div class="actions-row"><button id="neuroAnalyze" class="button button-primary" type="button">Gerar hipótese topográfica</button><button id="neuroClear" class="button button-quiet" type="button">Limpar exame</button></div>
+      <div id="neuroResults" class="alerts-stack" aria-live="polite"><div class="alert-card alert-neutral">Preencha os achados do exame e selecione “Gerar hipótese topográfica”.</div></div>
+      <p class="small-note">A lateralidade supratentorial é geralmente contralateral aos déficits motores/sensitivos corporais; déficits de nervos cranianos podem localizar lesão ipsilateral no tronco encefálico quando associados a sinais de trato longo contralaterais. Considere sempre a possibilidade de mimetizadores e diagnósticos alternativos.</p>
+    </section>
+
+    <section id="guide" class="tab-panel" hidden>
+      <div class="section-heading">
+        <div class="eyebrow">CONSULTA À BEIRA-LEITO</div>
+        <h2>Guia rápido de aplicação</h2>
+        <p class="muted">Resumo operacional. Consulte a versão oficial e o treinamento do instrumento para a aplicação completa.</p>
+      </div>
+      <div class="guide-list">
+        <article class="guide-card"><span class="guide-number">01</span><div><h3>Siga a ordem da escala</h3><p>Aplique os itens na sequência apresentada e registre cada resposta logo após testar o subitem.</p></div></article>
+        <article class="guide-card"><span class="guide-number">02</span><div><h3>Pontue o desempenho observado</h3><p>Considere o que o paciente efetivamente faz durante o exame, e não o que você acredita que ele seria capaz de fazer.</p></div></article>
+        <article class="guide-card"><span class="guide-number">03</span><div><h3>Não ofereça pistas indevidas</h3><p>Em regra, não treine nem conduza a resposta. Quando a instrução do item permitir demonstração por pantomima, siga o procedimento padronizado.</p></div></article>
+        <article class="guide-card"><span class="guide-number">04</span><div><h3>Use “não testável” somente quando previsto</h3><p>Na adaptação consultada, a marcação 9 é reservada a situações específicas nos itens motores, de ataxia e de disartria. Ela não equivale a zero nem a nove pontos.</p></div></article>
+        <article class="guide-card"><span class="guide-number">05</span><div><h3>Materiais de linguagem</h3><p>Nos itens 9 e 10, abra o PDF brasileiro diretamente no bloco de instruções de cada item. O link externo exige internet; mantenha disponível o material padronizado adotado pelo serviço para atendimento offline.</p></div></article>
+        <article class="guide-card"><span class="guide-number">06</span><div><h3>Trombectomia</h3><p>Confirme oclusão de grande vaso por angio-TC/angio-RM, tempo desde a última vez bem, NIHSS, mRS prévio e critérios de imagem. A aba de trombectomia separa os critérios do PCDT brasileiro dos critérios AHA/ASA 2026.</p></div></article>
+        <article class="guide-card"><span class="guide-number">07</span><div><h3>Exame neurológico e topografia</h3><p>Registre pares cranianos, força, tônus, reflexos, sensibilidade, coordenação e sinais corticais. A hipótese topográfica é heurística e deve ser confrontada com neuroimagem.</p></div></article>
+      </div>
+      <div class="notice notice-amber"><strong>Alerta de versão:</strong> uma adaptação mais antiga do Ministério da Saúde apresenta repetição editorial na descrição do escore 2 do item 3. A versão brasileira disponibilizada pela Ação AVC descreve o escore 1 como hemianopsia parcial e o escore 2 como hemianopsia completa. O serviço deve adotar uma única versão oficial e validada, sem misturar formulários.</div>
+    </section>
+
+    <section id="about" class="tab-panel" hidden>
+      <div class="section-heading">
+        <div class="eyebrow">DOCUMENTAÇÃO</div>
+        <h2>Sobre o NeuroSanta</h2>
+        <p class="muted">Ferramenta independente de apoio à avaliação neurológica aguda.</p>
+      </div>
+      <div class="about-card">
+        <h3>NIHSS — versão brasileira</h3>
+        <p>Referência de tradução e adaptação atribuída a Octávio Marques Pontes-Neto, disponibilizada pela Ação AVC. O PDF também contém os estímulos de figura, nomeação, leitura e disartria. Os links são apresentados diretamente nas instruções dos itens 9 e 10.</p>
+        <p><a href="https://www.acaoavc.org.br/assets/arquivos/nihss_traduzida_e_adaptada_brasil.pdf" target="_blank" rel="noopener">Abrir PDF brasileiro completo — Ação AVC</a></p>
+        <p>O PDF é externo e requer conexão com a internet. O NeuroSanta não incorpora nem redistribui cópia do material.</p>
+      </div>
+      <div class="about-card">
+        <h3>Trombectomia mecânica</h3>
+        <p>A aba específica apresenta, separadamente, critérios do PCDT brasileiro de AVC isquêmico agudo (Portaria Conjunta SAES/SECTICS nº 29/2023) e recomendações selecionadas da diretriz AHA/ASA 2026. Protocolos locais, disponibilidade da rede e avaliação da equipe neurovascular prevalecem.</p>
+        <p><a href="https://www.gov.br/saude/pt-br/assuntos/pcdt/a/acidente-vascular-cerebral-isquemico-agudo" target="_blank" rel="noopener">PCDT brasileiro — AVC isquêmico agudo</a></p>
+        <p><a href="https://www.ahajournals.org/doi/10.1161/STR.0000000000000513" target="_blank" rel="noopener">Diretriz AHA/ASA 2026 — manejo precoce do AVC isquêmico</a></p>
+      </div>
+      <div class="about-card">
+        <h3>Limites do exame e da topografia</h3>
+        <ul>
+          <li>A hipótese de localização/território é gerada por regras clínicas simplificadas; não identifica definitivamente a artéria ocluída.</li>
+          <li>Déficits flutuantes, circulação posterior, lesões múltiplas, variantes anatômicas, mimetizadores e achados incompletos podem alterar a localização.</li>
+          <li>A indicação de trombectomia depende de confirmação vascular por angio-TC/angio-RM, neuroimagem, janela, funcionalidade prévia, discussão com centro habilitado e protocolo vigente.</li>
+          <li>O app não substitui avaliação clínica, neuroimagem, discussão neurovascular, treinamento, protocolo institucional ou dupla checagem.</li>
+        </ul>
+      </div>
+      <div class="about-card">
+        <h3>Privacidade e funcionamento offline</h3>
+        <p>O protótipo não envia dados a servidores e não grava respostas no dispositivo. Campos clínicos e pontuações permanecem apenas na memória temporária da página e são apagados ao fechar ou atualizar o app. O PDF externo requer internet; o restante do aplicativo fica disponível no cache após a primeira carga.</p>
+      </div>
+      <div class="about-card">
+        <h3>Referências</h3>
+        <ol>
+          <li>Cincura C, Pontes-Neto OM, Neville IS, et al. Validation of the NIHSS, mRS and Barthel Index in Brazil. <em>Cerebrovasc Dis.</em> 2009;27(2):119–122. <a href="https://doi.org/10.1159/000177918" target="_blank" rel="noopener">doi:10.1159/000177918</a>.</li>
+          <li>Brasil. Portaria Conjunta SAES/SECTICS nº 29, de 12 de dezembro de 2023. PCDT — Acidente Vascular Cerebral Isquêmico Agudo.</li>
+          <li>Prabhakaran S, et al. 2026 Guideline for the Early Management of Patients With Acute Ischemic Stroke. <em>Stroke.</em> 2026. <a href="https://doi.org/10.1161/STR.0000000000000513" target="_blank" rel="noopener">doi:10.1161/STR.0000000000000513</a>.</li>
+        </ol>
+      </div>
+      <div class="version-line"><span>NeuroSanta</span><span>Protótipo 0.5.1</span></div>
+    </section>
+
+    <footer class="app-footer">NeuroSanta - Em homenagem à Residência de Neurologia da Santa Casa de São Paulo</footer>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js" defer></script>
+</body>
+</html>
